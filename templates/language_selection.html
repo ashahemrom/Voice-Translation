@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Language Selection - Voice Translator</title>
+    <style>
+        /* Modern Medical UI Theme */
+        :root {
+            --primary-blue: #2563eb;
+            --light-blue: #dbeafe;
+            --success-green: #10b981;
+            --light-green: #dcfce7;
+            --warning-orange: #f59e0b;
+            --light-orange: #fef3c7;
+            --danger-red: #ef4444;
+            --light-red: #fee2e2;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-900: #111827;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .selection-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue), #1d4ed8);
+            color: white;
+            padding: 40px 32px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .content {
+            padding: 40px 32px;
+        }
+
+        .language-selector {
+            margin-bottom: 32px;
+        }
+
+        .selector-group {
+            margin-bottom: 24px;
+        }
+
+        .selector-label {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .language-dropdown {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            background: white;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--gray-900);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 1rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5rem 1.5rem;
+            padding-right: 3rem;
+        }
+
+        .language-dropdown:hover {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .language-dropdown:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .language-option {
+            padding: 12px 20px;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            width: 100%;
+            text-align: left;
+        }
+
+        .language-option:hover {
+            background: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .language-flag {
+            font-size: 1.5rem;
+        }
+
+        .language-name {
+            flex: 1;
+        }
+
+        .language-native {
+            color: var(--gray-600);
+            font-weight: 400;
+        }
+
+        .action-button {
+            width: 100%;
+            padding: 18px 32px;
+            background: linear-gradient(135deg, var(--success-green), #059669);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .info-box {
+            background: var(--light-blue);
+            border: 1px solid var(--primary-blue);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .info-box h3 {
+            color: var(--primary-blue);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+
+        .info-box p {
+            color: var(--gray-600);
+            font-size: 0.95rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 32px 24px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 32px 24px;
+            }
+
+            .language-dropdown {
+                padding: 14px 16px;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="selection-card">
+            <div class="header">
+                <h1>🌐 Select Languages</h1>
+                <p>Choose communication languages for translation</p>
+            </div>
+
+            <div class="content">
+                {% if error %}
+                <div class="error-box" style="background: var(--light-red); border: 1px solid var(--danger-red); border-radius: 12px; padding: 16px; margin-bottom: 24px; text-align: center;">
+                    <h3 style="color: var(--danger-red); font-size: 1.1rem; font-weight: 600; margin: 0 0 8px 0;">⚠️ Error</h3>
+                    <p style="color: #991b1b; font-size: 0.95rem; margin: 0;">{{ error }}</p>
+                </div>
+                {% endif %}
+
+                <div class="info-box">
+                    <h3>🏥 Medical Communication Made Easy</h3>
+                    <p>Select the languages spoken by the doctor and patient. The system will automatically translate between them during conversation.</p>
+                </div>
+
+                <form id="languageForm" action="/translator" method="POST">
+                    <div class="selector-group">
+                        <label class="selector-label">👨‍⚕️ Doctor's Language</label>
+                        <select name="doctor_language" id="doctor_language" class="language-dropdown" required>
+                            <option value="">Select doctor's language...</option>
+                            <option value="en-IN">🇺🇸 English</option>
+                            <option value="hi-IN">🇮🇳 Hindi (हिंदी)</option>
+                            <option value="mr-IN">🇮🇳 Marathi (मराठी)</option>
+                            <option value="kn-IN">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+                        </select>
+                    </div>
+
+                    <div class="selector-group">
+                        <label class="selector-label">👤 Patient's Language</label>
+                        <select name="patient_language" id="patient_language" class="language-dropdown" required>
+                            <option value="">Select patient's language...</option>
+                            <option value="en-IN">🇺🇸 English</option>
+                            <option value="hi-IN">🇮🇳 Hindi (हिंदी)</option>
+                            <option value="mr-IN">🇮🇳 Marathi (मराठी)</option>
+                            <option value="kn-IN">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="action-button">
+                        🚀 Start Voice Translation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form validation and enhancement
+        document.getElementById('languageForm').addEventListener('submit', function(e) {
+            const doctorLang = document.getElementById('doctor_language').value;
+            const patientLang = document.getElementById('patient_language').value;
+
+            if (doctorLang === patientLang) {
+                e.preventDefault();
+                alert('⚠️ Please select different languages for doctor and patient.');
+                return;
+            }
+
+            if (!doctorLang || !patientLang) {
+                e.preventDefault();
+                alert('⚠️ Please select both languages.');
+                return;
+            }
+
+            // Show loading state
+            const button = e.target.querySelector('.action-button');
+            button.textContent = '⏳ Starting...';
+            button.disabled = true;
+        });
+
+        // Add visual feedback to dropdowns
+        document.querySelectorAll('.language-dropdown').forEach(dropdown => {
+            dropdown.addEventListener('change', function() {
+                if (this.value) {
+                    this.style.borderColor = '#10b981';
+                    this.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                } else {
+                    this.style.borderColor = '#e5e7eb';
+                    this.style.boxShadow = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

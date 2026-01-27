@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Speech Recognition Diagnostic Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .test-section {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .test-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .result.success {
+            border-color: #10b981;
+            background: #d1fae5;
+        }
+
+        .result.error {
+            border-color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .recommendation {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .recommendation h3 {
+            color: #92400e;
+            margin-bottom: 15px;
+        }
+
+        .recommendation p {
+            color: #78350f;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .recommendation strong {
+            color: #92400e;
+        }
+
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Speech Recognition Diagnostic Tool</h1>
+        <p class="subtitle">Let's find out why voice recognition isn't working</p>
+
+        <!-- Test 1: Browser Support -->
+        <div class="test-section">
+            <h3>
+                Test 1: Browser Compatibility
+                <span class="status pending" id="status-browser">Pending</span>
+            </h3>
+            <p>Checking if your browser supports speech recognition...</p>
+            <div class="result" id="result-browser"></div>
+        </div>
+
+        <!-- Test 2: Microphone Permission -->
+        <div class="test-section">
+            <h3>
+                Test 2: Microphone Permission
+                <span class="status pending" id="status-mic">Pending</span>
+            </h3>
+            <p>Testing microphone access...</p>
+            <button onclick="testMicrophone()" id="btn-mic">Test Microphone</button>
+            <div class="result" id="result-mic" style="display: none;"></div>
+        </div>
+
+        <!-- Test 3: Network Connectivity -->
+        <div class="test-section">
+            <h3>
+                Test 3: Google Servers Connectivity
+                <span class="status pending" id="status-network">Pending</span>
+            </h3>
+            <p>Checking if you can reach Google's speech servers...</p>
+            <button onclick="testNetwork()" id="btn-network">Test Network</button>
+            <div class="result" id="result-network" style="display: none;"></div>
+        </div>
+
+        <!-- Test 4: Speech Recognition -->
+        <div class="test-section">
+            <h3>
+                Test 4: Actual Speech Recognition
+                <span class="status pending" id="status-speech">Pending</span>
+            </h3>
+            <p>Try to recognize speech (speak after clicking)...</p>
+            <button onclick="testSpeech()" id="btn-speech">Test Speech Recognition</button>
+            <div class="result" id="result-speech" style="display: none;"></div>
+            <div class="progress" style="display: none;" id="progress-speech">
+                <div class="progress-bar" id="progress-bar-speech"></div>
+            </div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="recommendation" id="recommendation" style="display: none;">
+            <h3 id="rec-title">🎯 Recommendation</h3>
+            <div id="rec-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            browser: false,
+            microphone: false,
+            network: false,
+            speech: false
+        };
+
+        // Auto-run browser test
+        window.addEventListener('DOMContentLoaded', () => {
+            testBrowserSupport();
+        });
+
+        function testBrowserSupport() {
+            const statusEl = document.getElementById('status-browser');
+            const resultEl = document.getElementById('result-browser');
+            
+            const hasWebSpeech = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+            const hasSpeechSynthesis = 'speechSynthesis' in window;
+            const hasMediaDevices = 'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices;
+            
+            let result = `
+                Browser: ${navigator.userAgent.split(' ').slice(-2).join(' ')}<br>
+                Speech Recognition API: ${hasWebSpeech ? '✅ Supported' : '❌ Not Supported'}<br>
+                Speech Synthesis API: ${hasSpeechSynthesis ? '✅ Supported' : '❌ Not Supported'}<br>
+                Media Devices API: ${hasMediaDevices ? '✅ Supported' : '❌ Not Supported'}
+            `;
+            
+            resultEl.innerHTML = result;
+            
+            if (hasWebSpeech && hasSpeechSynthesis && hasMediaDevices) {
+                statusEl.textContent = 'Passed ✅';
+                statusEl.className = 'status success';
+                resultEl.className = 'result success';
+                testResults.browser = true;
+            } else {
+                statusEl.textContent = 'Failed ❌';
+                statusEl.className = 'status error';
+                resultEl.className = 'result error';
+                showRecommendation('browser');
+            }
+        }
+
+        async function testMicrophone() {
+            const statusEl = document.getElementById('status-mic');
+            const resultEl = document.getElementById('result-mic');
+            const btnEl = document.getElementById('btn-mic');
+            
+            btnEl.disabled = true;
+            btnEl.textContent = 'Testing...';
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Requesting microphone access...';
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Test if audio is actually coming through
+                const audioContext = new AudioContext();
+                const analyser = audioContext.createAnalyser();
+                const microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                // Check for sound
+                let soundDetected = false;
+                const checkSound = setInterval(() => {
+                    analyser.getByteFrequencyData(dataArray);
+                    const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+                    if (average > 10) soundDetected = true;
+                }, 100);
+                
+                setTimeout(() => {
+                    clearInterval(checkSound);
+                    stream.getTracks().forEach(track => track.stop());
+                    audioContext.close();
+                    
+                    if (soundDetected) {
+                        resultEl.innerHTML = '✅ Microphone is working! Sound detected.';
+                        resultEl.className = 'result success';
+                        statusEl.textContent = 'Passed ✅';
+                        statusEl.className = 'status success';
+                        testResults.microphone = true;
+                    } else {
+                        resultEl.innerHTML = '⚠️ Microphone accessible but no sound detected. Speak louder or check microphone.';
+                        resultEl.className = 'result';
+                        statusEl.textContent = 'Warning ⚠️';
+                        statusEl.className = 'status pending';
+                    }
+                    
+                    btnEl.disabled = false;
+                    btnEl.textContent = 'Test Again';
+                }, 3000);
+                
+                resultEl.innerHTML = '🎤 Microphone access granted! Listening for sound... (speak now)';
+                
+            } catch (error) {
+                resultEl.innerHTML = `❌ Microphone error: ${error.message}<br>Make sure to click "Allow" when prompted.`;
+                resultEl.className = 'result error';
+                statusEl.textContent = 'Failed ❌';
+                statusEl.className = 'status error';
+                btnEl.disabled = false;
+                btnEl.textContent = 'Try Again';
+                showRecommendation('microphone');
+            }
+        }
+
+        async function testNetwork() {
+            const statusEl = document.getElementById('status-network');
+            const resultEl = document.getElementById('result-network');
+            const btnEl = document.getElementById('btn-network');
+            
+            btnEl.disabled = true;
+            btnEl.textContent = 'Testing...';
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Testing connection to Google servers...';
+            
+            const tests = [
+                { name: 'Google Main', url: 'https://www.google.com/favicon.ico' },
+                { name: 'Google APIs', url: 'https://www.googleapis.com/robots.txt' },
+            ];
+            
+            let results = [];
+            
+            for (const test of tests) {
+                try {
+                    const start = Date.now();
+                    const response = await fetch(test.url, { mode: 'no-cors', cache: 'no-cache' });
+                    const latency = Date.now() - start;
+                    results.push(`✅ ${test.name}: OK (${latency}ms)`);
+                } catch (error) {
+                    results.push(`❌ ${test.name}: BLOCKED - ${error.message}`);
+                }
+            }
+            
+            resultEl.innerHTML = results.join('<br>');
+            
+            if (results.every(r => r.startsWith('✅'))) {
+                resultEl.className = 'result success';
+                statusEl.textContent = 'Passed ✅';
+                statusEl.className = 'status success';
+                testResults.network = true;
+            } else {
+                resultEl.className = 'result error';
+                statusEl.textContent = 'Failed ❌';
+                statusEl.className = 'status error';
+                showRecommendation('network');
+            }
+            
+            btnEl.disabled = false;
+            btnEl.textContent = 'Test Again';
+        }
+
+        function testSpeech() {
+            const statusEl = document.getElementById('status-speech');
+            const resultEl = document.getElementById('result-speech');
+            const btnEl = document.getElementById('btn-speech');
+            const progressEl = document.getElementById('progress-speech');
+            const progressBarEl = document.getElementById('progress-bar-speech');
+            
+            btnEl.disabled = true;
+            btnEl.textContent = 'Listening...';
+            resultEl.style.display = 'block';
+            progressEl.style.display = 'block';
+            progressBarEl.style.width = '0%';
+            
+            resultEl.innerHTML = '🎤 Speak now! Say anything (e.g., "Hello", "Testing")...';
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            
+            recognition.lang = 'en-IN';
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            
+            let progressInterval = setInterval(() => {
+                const currentWidth = parseFloat(progressBarEl.style.width);
+                if (currentWidth < 95) {
+                    progressBarEl.style.width = (currentWidth + 10) + '%';
+                }
+            }, 500);
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const confidence = (event.results[0][0].confidence * 100).toFixed(1);
+                resultEl.innerHTML = `✅ HEARD: "${transcript}"<br>Confidence: ${confidence}%`;
+                resultEl.className = 'result success';
+            };
+            
+            recognition.onend = () => {
+                clearInterval(progressInterval);
+                progressBarEl.style.width = '100%';
+                btnEl.disabled = false;
+                btnEl.textContent = 'Test Again';
+                
+                if (!resultEl.innerHTML.includes('HEARD')) {
+                    resultEl.innerHTML = '❌ No speech detected. Speak louder or check microphone.';
+                    resultEl.className = 'result error';
+                    statusEl.textContent = 'Failed ❌';
+                    statusEl.className = 'status error';
+                } else {
+                    statusEl.textContent = 'Passed ✅';
+                    statusEl.className = 'status success';
+                    testResults.speech = true;
+                    showRecommendation('success');
+                }
+            };
+            
+            recognition.onerror = (event) => {
+                clearInterval(progressInterval);
+                progressBarEl.style.width = '100%';
+                
+                let errorMsg = '';
+                switch(event.error) {
+                    case 'network':
+                        errorMsg = '❌ NETWORK ERROR: Cannot connect to Google\'s speech servers.<br>This is the problem! Your network blocks the speech API.';
+                        break;
+                    case 'not-allowed':
+                        errorMsg = '❌ PERMISSION DENIED: Microphone access was denied.';
+                        break;
+                    case 'no-speech':
+                        errorMsg = '⚠️ NO SPEECH: No speech detected. Speak louder.';
+                        break;
+                    default:
+                        errorMsg = `❌ ERROR: ${event.error}`;
+                }
+                
+                resultEl.innerHTML = errorMsg;
+                resultEl.className = 'result error';
+                statusEl.textContent = 'Failed ❌';
+                statusEl.className = 'status error';
+                btnEl.disabled = false;
+                btnEl.textContent = 'Try Again';
+                showRecommendation(event.error);
+            };
+            
+            try {
+                recognition.start();
+            } catch (error) {
+                clearInterval(progressInterval);
+                resultEl.innerHTML = `❌ Error starting recognition: ${error.message}`;
+                resultEl.className = 'result error';
+                statusEl.textContent = 'Failed ❌';
+                statusEl.className = 'status error';
+                btnEl.disabled = false;
+                btnEl.textContent = 'Try Again';
+            }
+        }
+
+        function showRecommendation(issue) {
+            const recEl = document.getElementById('recommendation');
+            const titleEl = document.getElementById('rec-title');
+            const contentEl = document.getElementById('rec-content');
+            
+            recEl.style.display = 'block';
+            
+            const recommendations = {
+                'browser': {
+                    title: '🌐 Browser Not Compatible',
+                    content: `
+                        <p><strong>Problem:</strong> Your browser doesn't support speech recognition.</p>
+                        <p><strong>Solution:</strong></p>
+                        <p>1. Install and use Google Chrome (best support)</p>
+                        <p>2. Update your browser to the latest version</p>
+                        <p>3. If using Safari, switch to Chrome</p>
+                        <p><strong>Alternative:</strong> Use "💬 Continuous Text Chat" mode - works in all browsers!</p>
+                    `
+                },
+                'microphone': {
+                    title: '🎤 Microphone Access Problem',
+                    content: `
+                        <p><strong>Problem:</strong> Cannot access your microphone.</p>
+                        <p><strong>Solution:</strong></p>
+                        <p>1. Click the 🔒 lock icon in your browser's address bar</p>
+                        <p>2. Change microphone permission to "Allow"</p>
+                        <p>3. Refresh the page and try again</p>
+                        <p>4. Check System Preferences → Sound → Input</p>
+                    `
+                },
+                'network': {
+                    title: '🌐 Network Connectivity Issue',
+                    content: `
+                        <p><strong>Problem:</strong> Your network blocks Google's speech servers.</p>
+                        <p><strong>This is THE issue causing voice recognition to fail!</strong></p>
+                        <p><strong>Solutions:</strong></p>
+                        <p>1. <strong>Recommended:</strong> Use "💬 Continuous Text Chat" mode (works with any network)</p>
+                        <p>2. Try different network (mobile hotspot instead of WiFi)</p>
+                        <p>3. Disable VPN/proxy if using one</p>
+                        <p>4. Contact IT to whitelist *.google.com and *.googleapis.com</p>
+                        <p><strong>For Rural Healthcare:</strong> Text chat is MORE RELIABLE than voice anyway!</p>
+                    `
+                },
+                'success': {
+                    title: '✅ All Tests Passed!',
+                    content: `
+                        <p><strong>Great news!</strong> Speech recognition is working on your system.</p>
+                        <p><strong>You can use:</strong></p>
+                        <p>1. 🔄 Continuous Conversation mode (full voice translation)</p>
+                        <p>2. 🎤 Voice Input mode (request-response)</p>
+                        <p><strong>Tips for best results:</strong></p>
+                        <p>• Speak clearly and at normal pace</p>
+                        <p>• Stay close to the microphone</p>
+                        <p>• Minimize background noise</p>
+                        <p>• Have good internet connection</p>
+                    `
+                }
+            };
+            
+            const rec = recommendations[issue] || recommendations['network'];
+            titleEl.textContent = rec.title;
+            contentEl.innerHTML = rec.content;
+        }
+    </script>
+</body>
+</html>
+

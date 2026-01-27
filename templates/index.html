@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Voice Translator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script>
+        // Store selected languages globally for JavaScript access
+        window.selectedDoctorLanguage = "{{ doctor_language or 'en-IN' }}";
+        window.selectedPatientLanguage = "{{ patient_language or 'hi-IN' }}";
+    </script>
+    <style>
+        /* Modern Medical UI Theme */
+        :root {
+            --primary-blue: #2563eb;
+            --light-blue: #dbeafe;
+            --success-green: #10b981;
+            --light-green: #dcfce7;
+            --warning-orange: #f59e0b;
+            --light-orange: #fef3c7;
+            --danger-red: #ef4444;
+            --light-red: #fee2e2;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-900: #111827;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .translator-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            margin: 20px auto;
+            max-width: 1000px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue), #1d4ed8);
+            color: white;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .chat-interface {
+            display: flex;
+            gap: 24px;
+            margin: 32px;
+            height: 450px;
+        }
+
+        .language-column {
+            flex: 1;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            background: var(--gray-50);
+            overflow: hidden;
+        }
+
+        .language-header {
+            background: linear-gradient(135deg, var(--primary-blue), #3b82f6);
+            color: white;
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .chat-message {
+            margin-bottom: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: var(--gray-100);
+            border-left: 4px solid var(--primary-blue);
+            box-shadow: var(--shadow);
+        }
+
+        .chat-message.original {
+            background: var(--light-blue);
+            border-left-color: var(--primary-blue);
+        }
+
+        .chat-message.translation {
+            background: var(--light-green);
+            border-left-color: var(--success-green);
+        }
+
+        .message-content {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .message-content small {
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        .control-panel {
+            text-align: center;
+            margin: 32px;
+        }
+
+        .start-stop-btn {
+            font-size: 18px;
+            font-weight: 600;
+            padding: 16px 32px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-stop-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .start-stop-btn:hover::before {
+            left: 100%;
+        }
+
+        .start-stop-btn.listening {
+            background: linear-gradient(135deg, var(--danger-red), #dc2626);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(239, 68, 68, 0.4);
+        }
+
+        .start-stop-btn.ready {
+            background: linear-gradient(135deg, var(--success-green), #059669);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        .start-stop-btn.ready:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.6);
+        }
+
+        .status-info {
+            margin: 24px 32px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--gray-900);
+            background: var(--gray-50);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+        }
+
+        .messages {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 0 32px 32px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .message {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .message.success {
+            background: var(--light-green);
+            color: #065f46;
+            border-left: 3px solid var(--success-green);
+        }
+
+        .message.error {
+            background: var(--light-red);
+            color: #991b1b;
+            border-left: 3px solid var(--danger-red);
+        }
+
+        .message.warning {
+            background: var(--light-orange);
+            color: #92400e;
+            border-left: 3px solid var(--warning-orange);
+        }
+
+        .message.info {
+            background: var(--light-blue);
+            color: #1e40af;
+            border-left: 3px solid var(--primary-blue);
+        }
+
+        .speak-button-container {
+            padding: 16px;
+            border-top: 1px solid var(--gray-200);
+            background: var(--gray-50);
+            text-align: center;
+        }
+
+        .speak-button {
+            width: 100%;
+            padding: 14px 20px;
+            border: 2px solid var(--primary-blue);
+            border-radius: 8px;
+            background: white;
+            color: var(--primary-blue);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .speak-button:hover {
+            background: var(--primary-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -8px rgba(37, 99, 235, 0.5);
+        }
+
+        .speak-button:active {
+            transform: translateY(0);
+        }
+
+        .speak-button.recording {
+            background: var(--danger-red);
+            border-color: var(--danger-red);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .speak-button.patient-speak {
+            border-color: var(--success-green);
+            color: var(--success-green);
+        }
+
+        .speak-button.patient-speak:hover {
+            background: var(--success-green);
+        }
+
+        .speak-button.patient-speak.recording {
+            background: var(--danger-red);
+            border-color: var(--danger-red);
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .chat-interface {
+                flex-direction: column;
+                height: auto;
+                gap: 16px;
+            }
+
+            .header {
+                padding: 24px 16px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .language-column {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="translator-card">
+            <div class="header">
+                <h1>🏥 Voice Translator</h1>
+                <p>Automatic Language Detection & Translation</p>
+            </div>
+
+            <!-- Status -->
+            <div class="status-info">
+                <div id="status-display">🎤 Ready to start listening</div>
+            </div>
+
+            <!-- Dual Language Chat Interface -->
+            <div class="chat-interface">
+                <!-- Doctor's Language Column -->
+                <div class="language-column">
+                    <div class="language-header">
+                        {% if doctor_language == 'en-IN' %}🇺🇸 English
+                        {% elif doctor_language == 'hi-IN' %}🇮🇳 Hindi (हिंदी)
+                        {% elif doctor_language == 'mr-IN' %}🇮🇳 Marathi (मराठी)
+                        {% elif doctor_language == 'kn-IN' %}🇮🇳 Kannada (ಕನ್ನಡ)
+                        {% else %}🇺🇸 English{% endif %}
+                    </div>
+                    <div class="chat-messages" id="doctor-messages">
+                        <div class="chat-message system">
+                            <div class="message-content">👋 Doctor's language text will appear here</div>
+                        </div>
+                    </div>
+                    <div class="speak-button-container">
+                        <button class="speak-button doctor-speak" id="speak-as-doctor" data-speaker="doctor">
+                            🎤 Speak as Doctor
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Patient's Language Column -->
+                <div class="language-column">
+                    <div class="language-header">
+                        {% if patient_language == 'en-IN' %}🇺🇸 English
+                        {% elif patient_language == 'hi-IN' %}🇮🇳 Hindi (हिंदी)
+                        {% elif patient_language == 'mr-IN' %}🇮🇳 Marathi (मराठी)
+                        {% elif patient_language == 'kn-IN' %}🇮🇳 Kannada (ಕನ್ನಡ)
+                        {% else %}🇮🇳 Hindi (हिंदी){% endif %}
+                    </div>
+                    <div class="chat-messages" id="patient-messages">
+                        <div class="chat-message system">
+                            <div class="message-content">👋 Patient's language text will appear here</div>
+                        </div>
+                    </div>
+                    <div class="speak-button-container">
+                        <button class="speak-button patient-speak" id="speak-as-patient" data-speaker="patient">
+                            🎤 Speak as Patient
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <button id="start-stop-btn" class="start-stop-btn ready">🎤 Start Listening</button>
+            </div>
+
+            <!-- Status Messages -->
+            <div class="messages" id="messages"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
